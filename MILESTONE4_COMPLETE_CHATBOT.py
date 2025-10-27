@@ -1561,7 +1561,7 @@ def update_user_profile(user_id, profile_data):
 
 def main():
     st.set_page_config(
-        page_title="Wellness Assistant Chatbot - Milestone 4",
+        page_title="Wellness Assistant Chatbot ",
         page_icon="🌿",
         layout="wide"
     )
@@ -1621,7 +1621,7 @@ def main():
 
     # Regular User Authentication
     if not st.session_state.authenticated:
-        st.markdown('<div class="main-header">🌿 Wellness Assistant Chatbot - Milestone 4</div>', unsafe_allow_html=True)
+        st.markdown('<div class="main-header">🌿 Wellness Assistant Chatbot </div>', unsafe_allow_html=True)
 
         # Add Admin Button
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -1942,4 +1942,5 @@ def main():
                             st.rerun()
 
 if __name__ == "__main__":
+
     main()
