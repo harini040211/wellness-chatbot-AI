@@ -1282,32 +1282,191 @@ def show_content_management():
     tab1, tab2, tab3 = st.tabs(["Knowledge Base", "Responses", "Feedback"])
     
     with tab1:
-        st.write("**Current Knowledge Base Topics:**")
+        st.write("### 📚 Knowledge Base Management")
         
-        # Display current symptoms
-        st.write("**Symptoms Covered:**")
-        symptoms = list(WELLNESS_KB['symptoms'].keys())
-        for i, symptom in enumerate(symptoms, 1):
-            st.write(f"{i}. {symptom.replace('_', ' ').title()}")
+        # Action selector
+        action = st.radio("Select Action:", ["View All", "Add New", "Edit", "Delete"], horizontal=True)
         
-        # Display first aid topics
-        st.write("**First Aid Topics:**")
-        first_aid = list(WELLNESS_KB['first_aid'].keys())
-        for i, topic in enumerate(first_aid, 1):
-            st.write(f"{i}. {topic.replace('_', ' ').title()}")
+        st.markdown("---")
         
-        # Add new content form
-        st.subheader("➕ Add New Content")
-        with st.form("add_content"):
-            content_type = st.selectbox("Content Type:", ["Symptom", "First Aid", "Wellness Tip"])
-            topic_name = st.text_input("Topic Name:")
-            english_content = st.text_area("English Content:")
-            hindi_content = st.text_area("Hindi Content:")
+        # VIEW ALL ENTRIES
+        if action == "View All":
+            st.subheader("📋 All Knowledge Base Entries")
             
-            if st.form_submit_button("Add Content"):
-                st.success(f"Content for '{topic_name}' would be added to {content_type} section")
-                log_admin_action(st.session_state.get('admin_email', 'admin'), 
-                               f"Added {content_type} content", f"Topic: {topic_name}")
+            # Show built-in KB first
+            st.write("**Built-in Knowledge Base:**")
+            
+            with st.expander("🔹 Symptoms Covered"):
+                symptoms = list(WELLNESS_KB['symptoms'].keys())
+                for i, symptom in enumerate(symptoms, 1):
+                    st.write(f"{i}. {symptom.replace('_', ' ').title()}")
+            
+            with st.expander("🔹 First Aid Topics"):
+                first_aid = list(WELLNESS_KB['first_aid'].keys())
+                for i, topic in enumerate(first_aid, 1):
+                    st.write(f"{i}. {topic.replace('_', ' ').title()}")
+            
+            st.markdown("---")
+            st.write("**Custom Knowledge Base Entries:**")
+            
+            entries = get_all_kb_entries()
+            
+            if entries:
+                # Display as expandable sections
+                for entry in entries:
+                    entry_id, content_type, topic_key, topic_name, english, hindi, created, updated = entry
+                    
+                    with st.expander(f"🔹 {content_type}: {topic_name}"):
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.write("**English Content:**")
+                            st.info(english)
+                        
+                        with col2:
+                            st.write("**Hindi Content:**")
+                            st.info(hindi)
+                        
+                        st.caption(f"Topic Key: `{topic_key}` | Created: {created} | Updated: {updated}")
+            else:
+                st.info("No custom knowledge base entries found. Add your first entry!")
+        
+        # ADD NEW ENTRY
+        elif action == "Add New":
+            st.subheader("➕ Add New Knowledge Base Entry")
+            
+            with st.form("add_kb_entry"):
+                content_type = st.selectbox("Content Type:", ["Symptom", "First Aid", "Wellness Tip", "Mental Health"])
+                
+                topic_name = st.text_input("Topic Name (Display):", placeholder="e.g., Headache Relief")
+                topic_key = st.text_input("Topic Key (Unique ID):", placeholder="e.g., headache_relief").lower().replace(" ", "_")
+                
+                st.write("**English Content:**")
+                english_content = st.text_area("English:", height=200, 
+                    placeholder="Enter detailed information in English...")
+                
+                st.write("**Hindi Content:**")
+                hindi_content = st.text_area("Hindi:", height=200,
+                    placeholder="हिंदी में विस्तृत जानकारी दर्ज करें...")
+                
+                submit = st.form_submit_button("✅ Add Entry", use_container_width=True)
+                
+                if submit:
+                    if not topic_name or not topic_key or not english_content or not hindi_content:
+                        st.error("❌ All fields are required!")
+                    else:
+                        success = add_kb_entry(
+                            content_type, topic_key, topic_name, 
+                            english_content, hindi_content, 
+                            st.session_state.get('admin_email', 'admin')
+                        )
+                        
+                        if success:
+                            st.success(f"✅ Successfully added '{topic_name}' to knowledge base!")
+                            log_admin_action(
+                                st.session_state.get('admin_email', 'admin'),
+                                "Added KB Entry",
+                                f"Type: {content_type}, Topic: {topic_name}"
+                            )
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to add entry. Topic key might already exist.")
+        
+        # EDIT ENTRY
+        elif action == "Edit":
+            st.subheader("✏️ Edit Knowledge Base Entry")
+            
+            entries = get_all_kb_entries()
+            
+            if entries:
+                # Create selection dropdown
+                entry_options = {f"{e[3]} ({e[1]})": e[0] for e in entries}
+                selected_entry = st.selectbox("Select Entry to Edit:", list(entry_options.keys()))
+                
+                if selected_entry:
+                    entry_id = entry_options[selected_entry]
+                    entry_data = get_kb_entry_by_id(entry_id)
+                    
+                    if entry_data:
+                        _, content_type, topic_key, topic_name, english, hindi = entry_data
+                        
+                        st.info(f"Editing: **{topic_name}** (Type: {content_type}, Key: `{topic_key}`)")
+                        
+                        with st.form("edit_kb_entry"):
+                            new_topic_name = st.text_input("Topic Name:", value=topic_name)
+                            
+                            st.write("**English Content:**")
+                            new_english = st.text_area("English:", value=english, height=200)
+                            
+                            st.write("**Hindi Content:**")
+                            new_hindi = st.text_area("Hindi:", value=hindi, height=200)
+                            
+                            update_btn = st.form_submit_button("💾 Update Entry", use_container_width=True)
+                            
+                            if update_btn:
+                                if not new_topic_name or not new_english or not new_hindi:
+                                    st.error("❌ All fields are required!")
+                                else:
+                                    success = update_kb_entry(entry_id, new_topic_name, new_english, new_hindi)
+                                    
+                                    if success:
+                                        st.success(f"✅ Successfully updated '{new_topic_name}'!")
+                                        log_admin_action(
+                                            st.session_state.get('admin_email', 'admin'),
+                                            "Updated KB Entry",
+                                            f"Topic: {new_topic_name}"
+                                        )
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Failed to update entry.")
+            else:
+                st.info("No entries available to edit.")
+        
+        # DELETE ENTRY
+        elif action == "Delete":
+            st.subheader("🗑️ Delete Knowledge Base Entry")
+            
+            entries = get_all_kb_entries()
+            
+            if entries:
+                st.warning("⚠️ **Warning:** Deletion is permanent and cannot be undone!")
+                
+                # Create selection dropdown
+                entry_options = {f"{e[3]} ({e[1]})": e[0] for e in entries}
+                selected_entry = st.selectbox("Select Entry to Delete:", list(entry_options.keys()))
+                
+                if selected_entry:
+                    entry_id = entry_options[selected_entry]
+                    entry_data = get_kb_entry_by_id(entry_id)
+                    
+                    if entry_data:
+                        _, content_type, topic_key, topic_name, english, hindi = entry_data
+                        
+                        st.error(f"**You are about to delete:** {topic_name}")
+                        st.write(f"**Type:** {content_type}")
+                        st.write(f"**Key:** `{topic_key}`")
+                        
+                        with st.expander("Preview Content"):
+                            st.write("**English:**", english[:200] + "...")
+                            st.write("**Hindi:**", hindi[:200] + "...")
+                        
+                        confirm = st.checkbox("I confirm I want to delete this entry")
+                        
+                        if st.button("🗑️ Delete Entry", type="primary", disabled=not confirm):
+                            success = delete_kb_entry(entry_id)
+                            
+                            if success:
+                                st.success(f"✅ Successfully deleted '{topic_name}'!")
+                                log_admin_action(
+                                    st.session_state.get('admin_email', 'admin'),
+                                    "Deleted KB Entry",
+                                    f"Topic: {topic_name}"
+                                )
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to delete entry.")
+            else:
+                st.info("No entries available to delete.")
     
     with tab2:
         st.write("**Response Analytics:**")
@@ -1369,7 +1528,7 @@ def show_content_management():
             st.error(f"Error loading response data: {str(e)}")
     
     with tab3:
-        st.write("**User Feedback Management:**")
+        st.write("### 💬 User Feedback Management")
         
         try:
             conn = sqlite3.connect('milestone4_wellness_chatbot.db')
@@ -1453,6 +1612,7 @@ def show_content_management():
             
         except Exception as e:
             st.error(f"Error loading feedback data: {str(e)}")
+
 
 def show_admin_settings():
     """Display admin settings and database management"""
@@ -2129,4 +2289,5 @@ def main():
                             st.rerun()
 
 if __name__ == "__main__":
+
     main()
