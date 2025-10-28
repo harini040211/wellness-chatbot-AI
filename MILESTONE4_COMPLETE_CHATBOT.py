@@ -461,12 +461,19 @@ def load_css():
         background: rgba(255,255,255,0.9);
         border-radius: 10px; padding: 1rem;
         margin: 0.5rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        color: black !important;
     }
+
     .profile-section {
         background: rgba(255,255,255,0.1);
         border-radius: 10px; padding: 1rem; margin: 1rem 0;
         border: 1px solid rgba(255,255,255,0.2);
     }
+        /* Make chatbot response text black */
+    .stChatMessage p, .stChatMessage div, .stChatMessage span {
+        color: black !important;
+    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -1944,3 +1951,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
