@@ -441,19 +441,16 @@ def load_css():
         padding: 0.6rem; font-weight: bold; width: 100%;
         transition: transform 0.2s;
     }
-        /* Larger icons for admin features */
-    .stButton > button {
-        font-size: 1.5rem !important;
-        padding: 1.5rem !important;
-        line-height: 1.8 !important;
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    
-    /* Feature icons inside sections */
-    h3::before, .stSubheader::before {
-        font-size: 1.8rem;
-        margin-right: 10px;
+    .admin-button > button {
+        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+        color: white; border: none; border-radius: 8px;
+        padding: 0.6rem; font-weight: bold; width: 100%;
+        transition: transform 0.2s;
     }
-
     .metric-card {
         background: rgba(255,255,255,0.9);
         border-radius: 10px; padding: 1.5rem;
@@ -464,34 +461,11 @@ def load_css():
         background: rgba(255,255,255,0.9);
         border-radius: 10px; padding: 1rem;
         margin: 0.5rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        color: black !important;
     }
-
     .profile-section {
         background: rgba(255,255,255,0.1);
         border-radius: 10px; padding: 1rem; margin: 1rem 0;
         border: 1px solid rgba(255,255,255,0.2);
-    }
-        /* Make success and error messages text black */
-    .stSuccess, .stError, .stWarning, .stInfo {
-        color: black !important;
-    }
-    
-    .stSuccess > div, .stError > div, .stWarning > div, .stInfo > div {
-        color: black !important;
-    }
-    
-    .stSuccess p, .stError p, .stWarning p, .stInfo p {
-        color: black !important;
-    }
-    
-    /* Ensure alert boxes have proper styling */
-    div[data-testid="stNotification"] {
-        color: black !important;
-    }
-    
-    div[data-testid="stNotification"] p {
-        color: black !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -582,21 +556,6 @@ def init_database():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
-        # Knowledge Base Management Table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS knowledge_base (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content_type TEXT NOT NULL,
-            topic_key TEXT NOT NULL UNIQUE,
-            topic_name TEXT NOT NULL,
-            english_content TEXT NOT NULL,
-            hindi_content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            created_by TEXT
-        )
-    """)
-
 
     conn.commit()
     conn.close()
@@ -818,104 +777,6 @@ def log_admin_action(admin_email, action, details=""):
     except Exception as e:
         st.error(f"Error logging admin action: {str(e)}")
 
-# ========== ADD ALL HELPER FUNCTIONS HERE (STARTING AT LINE 780) ==========
-
-def add_kb_entry(content_type, topic_key, topic_name, english_content, hindi_content, admin_email):
-    """Add new knowledge base entry to database"""
-    try:
-        conn = sqlite3.connect('milestone4_wellness_chatbot.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            INSERT INTO knowledge_base 
-            (content_type, topic_key, topic_name, english_content, hindi_content, created_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (content_type, topic_key, topic_name, english_content, hindi_content, admin_email))
-        
-        conn.commit()
-        conn.close()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    except Exception as e:
-        st.error(f"Error adding entry: {str(e)}")
-        return False
-
-def update_kb_entry(entry_id, topic_name, english_content, hindi_content):
-    """Update existing knowledge base entry"""
-    try:
-        conn = sqlite3.connect('milestone4_wellness_chatbot.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            UPDATE knowledge_base 
-            SET topic_name = ?, english_content = ?, hindi_content = ?, 
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        """, (topic_name, english_content, hindi_content, entry_id))
-        
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        st.error(f"Error updating entry: {str(e)}")
-        return False
-
-def delete_kb_entry(entry_id):
-    """Delete knowledge base entry"""
-    try:
-        conn = sqlite3.connect('milestone4_wellness_chatbot.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("DELETE FROM knowledge_base WHERE id = ?", (entry_id,))
-        
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        st.error(f"Error deleting entry: {str(e)}")
-        return False
-
-def get_all_kb_entries():
-    """Get all knowledge base entries from database"""
-    try:
-        conn = sqlite3.connect('milestone4_wellness_chatbot.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, content_type, topic_key, topic_name, 
-                   english_content, hindi_content, created_at, updated_at
-            FROM knowledge_base
-            ORDER BY content_type, topic_name
-        """)
-        
-        entries = cursor.fetchall()
-        conn.close()
-        return entries
-    except Exception as e:
-        st.error(f"Error fetching entries: {str(e)}")
-        return []
-
-def get_kb_entry_by_id(entry_id):
-    """Get single knowledge base entry by ID"""
-    try:
-        conn = sqlite3.connect('milestone4_wellness_chatbot.db')
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT id, content_type, topic_key, topic_name, 
-                   english_content, hindi_content
-            FROM knowledge_base
-            WHERE id = ?
-        """, (entry_id,))
-        
-        entry = cursor.fetchone()
-        conn.close()
-        return entry
-    except Exception as e:
-        st.error(f"Error fetching entry: {str(e)}")
-        return None
-
 def show_admin_dashboard():
     """Display the admin dashboard"""
     st.markdown('<div class="admin-header">🔧 Admin Dashboard - Wellness Chatbot Analytics</div>', unsafe_allow_html=True)
@@ -1023,6 +884,18 @@ def show_admin_dashboard():
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No intent data available yet")
+    
+    with col2:
+        st.subheader("👥 User Demographics")
+        if data['gender_dist']:
+            gender_df = pd.DataFrame(data['gender_dist'], columns=['Gender', 'Count'])
+            fig = px.bar(gender_df, x='Gender', y='Count',
+                        color='Gender', color_discrete_sequence=px.colors.qualitative.Set2,
+                        title="Gender Distribution")
+            fig.update_layout(height=400, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No demographic data available yet")
     
     # Daily Activity Chart
     st.subheader("📈 Daily Chat Activity (Last 30 Days)")
@@ -1278,183 +1151,35 @@ def show_content_management():
     
     tab1, tab2, tab3 = st.tabs(["Knowledge Base", "Responses", "Feedback"])
     
-        with tab1:
-        st.write("### 📚 Knowledge Base Management")
+    with tab1:
+        st.write("**Current Knowledge Base Topics:**")
         
-        # Action selector
-        action = st.radio("Select Action:", ["View All", "Add New", "Edit", "Delete"], horizontal=True)
+        # Display current symptoms
+        st.write("**Symptoms Covered:**")
+        symptoms = list(WELLNESS_KB['symptoms'].keys())
+        for i, symptom in enumerate(symptoms, 1):
+            st.write(f"{i}. {symptom.replace('_', ' ').title()}")
         
-        st.markdown("---")
+        # Display first aid topics
+        st.write("**First Aid Topics:**")
+        first_aid = list(WELLNESS_KB['first_aid'].keys())
+        for i, topic in enumerate(first_aid, 1):
+            st.write(f"{i}. {topic.replace('_', ' ').title()}")
         
-        # VIEW ALL ENTRIES
-        if action == "View All":
-            st.subheader("📋 All Knowledge Base Entries")
+        # Add new content form
+        st.subheader("➕ Add New Content")
+        with st.form("add_content"):
+            content_type = st.selectbox("Content Type:", ["Symptom", "First Aid", "Wellness Tip"])
+            topic_name = st.text_input("Topic Name:")
+            english_content = st.text_area("English Content:")
+            hindi_content = st.text_area("Hindi Content:")
             
-            entries = get_all_kb_entries()
-            
-            if entries:
-                # Display as expandable sections
-                for entry in entries:
-                    entry_id, content_type, topic_key, topic_name, english, hindi, created, updated = entry
-                    
-                    with st.expander(f"🔹 {content_type}: {topic_name}"):
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.write("**English Content:**")
-                            st.info(english)
-                        
-                        with col2:
-                            st.write("**Hindi Content:**")
-                            st.info(hindi)
-                        
-                        st.caption(f"Topic Key: `{topic_key}` | Created: {created} | Updated: {updated}")
-            else:
-                st.info("No custom knowledge base entries found. Add your first entry!")
-        
-        # ADD NEW ENTRY
-        elif action == "Add New":
-            st.subheader("➕ Add New Knowledge Base Entry")
-            
-            with st.form("add_kb_entry"):
-                content_type = st.selectbox("Content Type:", ["Symptom", "First Aid", "Wellness Tip", "Mental Health"])
-                
-                topic_name = st.text_input("Topic Name (Display):", placeholder="e.g., Headache Relief")
-                topic_key = st.text_input("Topic Key (Unique ID):", placeholder="e.g., headache_relief").lower().replace(" ", "_")
-                
-                st.write("**English Content:**")
-                english_content = st.text_area("English:", height=200, 
-                    placeholder="Enter detailed information in English...")
-                
-                st.write("**Hindi Content:**")
-                hindi_content = st.text_area("Hindi:", height=200,
-                    placeholder="हिंदी में विस्तृत जानकारी दर्ज करें...")
-                
-                submit = st.form_submit_button("✅ Add Entry", use_container_width=True)
-                
-                if submit:
-                    if not topic_name or not topic_key or not english_content or not hindi_content:
-                        st.error("❌ All fields are required!")
-                    else:
-                        success = add_kb_entry(
-                            content_type, topic_key, topic_name, 
-                            english_content, hindi_content, 
-                            st.session_state.get('admin_email', 'admin')
-                        )
-                        
-                        if success:
-                            st.success(f"✅ Successfully added '{topic_name}' to knowledge base!")
-                            log_admin_action(
-                                st.session_state.get('admin_email', 'admin'),
-                                "Added KB Entry",
-                                f"Type: {content_type}, Topic: {topic_name}"
-                            )
-                            st.rerun()
-                        else:
-                            st.error("❌ Failed to add entry. Topic key might already exist.")
-        
-        # EDIT ENTRY
-        elif action == "Edit":
-            st.subheader("✏️ Edit Knowledge Base Entry")
-            
-            entries = get_all_kb_entries()
-            
-            if entries:
-                # Create selection dropdown
-                entry_options = {f"{e[3]} ({e[1]})": e[0] for e in entries}
-                selected_entry = st.selectbox("Select Entry to Edit:", list(entry_options.keys()))
-                
-                if selected_entry:
-                    entry_id = entry_options[selected_entry]
-                    entry_data = get_kb_entry_by_id(entry_id)
-                    
-                    if entry_data:
-                        _, content_type, topic_key, topic_name, english, hindi = entry_data
-                        
-                        st.info(f"Editing: **{topic_name}** (Type: {content_type}, Key: `{topic_key}`)")
-                        
-                        with st.form("edit_kb_entry"):
-                            new_topic_name = st.text_input("Topic Name:", value=topic_name)
-                            
-                            st.write("**English Content:**")
-                            new_english = st.text_area("English:", value=english, height=200)
-                            
-                            st.write("**Hindi Content:**")
-                            new_hindi = st.text_area("Hindi:", value=hindi, height=200)
-                            
-                            col1, col2 = st.columns([3, 1])
-                            
-                            with col1:
-                                update_btn = st.form_submit_button("💾 Update Entry", use_container_width=True)
-                            
-                            if update_btn:
-                                if not new_topic_name or not new_english or not new_hindi:
-                                    st.error("❌ All fields are required!")
-                                else:
-                                    success = update_kb_entry(entry_id, new_topic_name, new_english, new_hindi)
-                                    
-                                    if success:
-                                        st.success(f"✅ Successfully updated '{new_topic_name}'!")
-                                        log_admin_action(
-                                            st.session_state.get('admin_email', 'admin'),
-                                            "Updated KB Entry",
-                                            f"Topic: {new_topic_name}"
-                                        )
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ Failed to update entry.")
-            else:
-                st.info("No entries available to edit.")
-        
-        # DELETE ENTRY
-        elif action == "Delete":
-            st.subheader("🗑️ Delete Knowledge Base Entry")
-            
-            entries = get_all_kb_entries()
-            
-            if entries:
-                st.warning("⚠️ **Warning:** Deletion is permanent and cannot be undone!")
-                
-                # Create selection dropdown
-                entry_options = {f"{e[3]} ({e[1]})": e[0] for e in entries}
-                selected_entry = st.selectbox("Select Entry to Delete:", list(entry_options.keys()))
-                
-                if selected_entry:
-                    entry_id = entry_options[selected_entry]
-                    entry_data = get_kb_entry_by_id(entry_id)
-                    
-                    if entry_data:
-                        _, content_type, topic_key, topic_name, english, hindi = entry_data
-                        
-                        st.error(f"**You are about to delete:** {topic_name}")
-                        st.write(f"**Type:** {content_type}")
-                        st.write(f"**Key:** `{topic_key}`")
-                        
-                        with st.expander("Preview Content"):
-                            st.write("**English:**", english[:200] + "...")
-                            st.write("**Hindi:**", hindi[:200] + "...")
-                        
-                        confirm = st.checkbox("I confirm I want to delete this entry")
-                        
-                        if st.button("🗑️ Delete Entry", type="primary", disabled=not confirm):
-                            success = delete_kb_entry(entry_id)
-                            
-                            if success:
-                                st.success(f"✅ Successfully deleted '{topic_name}'!")
-                                log_admin_action(
-                                    st.session_state.get('admin_email', 'admin'),
-                                    "Deleted KB Entry",
-                                    f"Topic: {topic_name}"
-                                )
-                                st.rerun()
-                            else:
-                                st.error("❌ Failed to delete entry.")
-            else:
-                st.info("No entries available to delete.")
-
+            if st.form_submit_button("Add Content"):
+                st.success(f"Content for '{topic_name}' would be added to {content_type} section")
+                log_admin_action(st.session_state.get('admin_email', 'admin'), 
+                               f"Added {content_type} content", f"Topic: {topic_name}")
     
-
-        with tab2:
+    with tab2:
         st.write("**Response Analytics:**")
         
         try:
@@ -1513,8 +1238,8 @@ def show_content_management():
         except Exception as e:
             st.error(f"Error loading response data: {str(e)}")
     
-       with tab3:
-        st.write("### 💬 User Feedback Management")
+    with tab3:
+        st.write("**User Feedback Management:**")
         
         try:
             conn = sqlite3.connect('milestone4_wellness_chatbot.db')
@@ -1534,63 +1259,29 @@ def show_content_management():
             detailed_feedback = cursor.fetchall()
             
             if detailed_feedback:
-                # Display feedback in normal form (not table)
-                st.write("**Recent Feedback Entries:**")
+                feedback_df = pd.DataFrame(detailed_feedback, columns=[
+                    'User Name', 'Email', 'Feedback Type', 'Rating', 'Timestamp', 'User Message', 'Bot Response'
+                ])
                 
-                for idx, feedback in enumerate(detailed_feedback[:10], 1):
-                    user_name, email, feedback_type, rating, timestamp, user_msg, bot_response = feedback
-                    
-                    with st.expander(f"🔹 Feedback #{idx} - {user_name} ({feedback_type})"):
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.write(f"**User:** {user_name}")
-                            st.write(f"**Email:** {email}")
-                            st.write(f"**Feedback:** {feedback_type}")
-                        
-                        with col2:
-                            st.write(f"**Rating:** {'⭐' * (rating if rating else 0)}")
-                            st.write(f"**Time:** {timestamp}")
-                        
-                        if user_msg:
-                            st.write(f"**User Message:** {user_msg[:200]}...")
-                        if bot_response:
-                            st.write(f"**Bot Response:** {bot_response[:200]}...")
+                # Format timestamp
+                feedback_df['Timestamp'] = pd.to_datetime(feedback_df['Timestamp']).dt.strftime('%Y-%m-%d %H:%M')
                 
-                st.markdown("---")
+                st.dataframe(feedback_df, use_container_width=True, height=400)
                 
-                # Feedback summary in colored boxes
-                st.write("### 📊 Feedback Summary")
-                
+                # Feedback summary
                 col1, col2, col3 = st.columns(3)
-                
                 with col1:
-                    total_feedback = len(detailed_feedback)
-                    st.markdown(f"""
-                    <div class="metric-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <h3 style="color: black !important; margin: 0;">📊 Total Feedback</h3>
-                        <p style="color: black !important; font-size: 2.5rem; font-weight: bold; margin: 10px 0;">{total_feedback}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    total_feedback = len(feedback_df)
+                    st.metric("Total Feedback", total_feedback)
                 
                 with col2:
-                    thumbs_up_count = sum(1 for f in detailed_feedback if f[2] == 'thumbs_up')
+                    thumbs_up_count = len(feedback_df[feedback_df['Feedback Type'] == 'thumbs_up'])
                     satisfaction_rate = (thumbs_up_count / total_feedback * 100) if total_feedback > 0 else 0
-                    st.markdown(f"""
-                    <div class="metric-box" style="background: linear-gradient(135deg, #4ECDC4 0%, #45B7D1 100%);">
-                        <h3 style="color: black !important; margin: 0;">😊 Satisfaction Rate</h3>
-                        <p style="color: black !important; font-size: 2.5rem; font-weight: bold; margin: 10px 0;">{satisfaction_rate:.1f}%</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.metric("Satisfaction Rate", f"{satisfaction_rate:.1f}%")
                 
                 with col3:
-                    thumbs_down = total_feedback - thumbs_up_count
-                    st.markdown(f"""
-                    <div class="metric-box" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);">
-                        <h3 style="color: black !important; margin: 0;">👎 This Week</h3>
-                        <p style="color: black !important; font-size: 2.5rem; font-weight: bold; margin: 10px 0;">{thumbs_down}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    recent_feedback = len(feedback_df[pd.to_datetime(feedback_df['Timestamp']) >= (datetime.now() - timedelta(days=7))])
+                    st.metric("This Week", recent_feedback)
             else:
                 st.info("No feedback data available yet. Users need to rate chatbot responses.")
             
@@ -1598,7 +1289,6 @@ def show_content_management():
             
         except Exception as e:
             st.error(f"Error loading feedback data: {str(e)}")
-
 
 def show_admin_settings():
     """Display admin settings and database management"""
@@ -1871,7 +1561,7 @@ def update_user_profile(user_id, profile_data):
 
 def main():
     st.set_page_config(
-        page_title="Wellness Assistant Chatbot ",
+        page_title="Wellness Assistant Chatbot",
         page_icon="🌿",
         layout="wide"
     )
@@ -1902,77 +1592,36 @@ def main():
         # Admin Interface
         st.markdown('<div class="admin-header">🔧 Admin Panel - Wellness Chatbot Management</div>', unsafe_allow_html=True)
         
-                # Admin Navigation with styled buttons
-        st.markdown("""
-        <style>
-        .metric-box {
-            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            margin: 10px;
-        }
-        .metric-box h3, .metric-box p {
-            color: black !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Admin Navigation
+        admin_tabs = st.tabs(["📊 Dashboard", "👥 Users", "📈 Analytics", "📝 Content", "⚙️ Settings", "🔓 Logout"])
         
-        # Navigation buttons
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        with admin_tabs[0]:
+            show_admin_dashboard()
         
-        with col1:
-            if st.button("📊\n\nDashboard", key="nav_dashboard", use_container_width=True, help="View Dashboard"):
-                st.session_state.admin_view = 'dashboard'
+        with admin_tabs[1]:
+            show_user_management()
         
-        with col2:
-            if st.button("👥\n\nUsers", key="nav_users", use_container_width=True, help="Manage Users"):
-                st.session_state.admin_view = 'users'
+        with admin_tabs[2]:
+            show_system_analytics()
         
-        with col3:
-            if st.button("📈\n\nAnalytics", key="nav_analytics", use_container_width=True, help="View Analytics"):
-                st.session_state.admin_view = 'analytics'
+        with admin_tabs[3]:
+            show_content_management()
         
-        with col4:
-            if st.button("📝\n\nContent", key="nav_content", use_container_width=True, help="Manage Content"):
-                st.session_state.admin_view = 'content'
+        with admin_tabs[4]:
+            show_admin_settings()
         
-        with col5:
-            if st.button("⚙️\n\nSettings", key="nav_settings", use_container_width=True, help="System Settings"):
-                st.session_state.admin_view = 'settings'
-        
-        with col6:
-            if st.button("🔓\n\nLogout", key="nav_logout", use_container_width=True, help="Logout"):
+        with admin_tabs[5]:
+            if st.button("🔓 Logout from Admin"):
                 st.session_state.admin_authenticated = False
                 st.session_state.admin_email = None
                 st.success("Logged out from admin panel")
                 st.rerun()
         
-        st.markdown("---")
-        
-        # Initialize admin view
-        if 'admin_view' not in st.session_state:
-            st.session_state.admin_view = 'dashboard'
-        
-        # Show selected view
-        if st.session_state.admin_view == 'dashboard':
-            show_admin_dashboard()
-        elif st.session_state.admin_view == 'users':
-            show_user_management()
-        elif st.session_state.admin_view == 'analytics':
-            show_system_analytics()
-        elif st.session_state.admin_view == 'content':
-            show_content_management()
-        elif st.session_state.admin_view == 'settings':
-            show_admin_settings()
-                 st.rerun()
-        
         return
 
     # Regular User Authentication
     if not st.session_state.authenticated:
-        st.markdown('<div class="main-header">🌿 Wellness Assistant Chatbot </div>', unsafe_allow_html=True)
+        st.markdown('<div class="main-header">🌿 Wellness Assistant Chatbot</div>', unsafe_allow_html=True)
 
         # Add Admin Button
         col1, col2, col3 = st.columns([1, 2, 1])
@@ -2293,7 +1942,4 @@ def main():
                             st.rerun()
 
 if __name__ == "__main__":
-
     main()
-
-
